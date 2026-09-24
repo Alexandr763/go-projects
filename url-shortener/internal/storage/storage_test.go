@@ -1,11 +1,15 @@
 package storage
 
-import "testing"
+import (
+	"context"
+	"testing"
+)
 
 // Тест 1 проверка сохранения и получения
 func TestSaveAndGet(t *testing.T) {
-	a := NewStorage() // вызвал конструктор
-	code, err := a.Save("https://example.com")
+	a := NewStorage()
+	ctx := context.Background()
+	code, err := a.Save(ctx, "https://example.com")
 	if err != nil {
 		t.Fatalf("Не удалось сохранить: %v", err)
 	}
@@ -20,8 +24,10 @@ func TestSaveAndGet(t *testing.T) {
 
 // Тест 2 проверка удаления
 func TestDelete(t *testing.T) {
+	ctx := context.Background()
+
 	a := NewStorage() // вызвал конструктор
-	code, err := a.Save("https://example.com")
+	code, err := a.Save(ctx, "https://example.com")
 	if err != nil {
 		t.Fatalf("Не удалось сохранить: %v", err)
 	}
@@ -34,8 +40,10 @@ func TestDelete(t *testing.T) {
 
 // Тест 3 проверка получения после удаления
 func TestGetAfterDelete(t *testing.T) {
+	ctx := context.Background()
+
 	a := NewStorage() // вызвал конструктор
-	code, err := a.Save("https://example.com")
+	code, err := a.Save(ctx, "https://example.com")
 	if err != nil {
 		t.Fatalf("Не удалось сохранить: %v", err)
 	}
@@ -60,16 +68,18 @@ func TestGetNotFound(t *testing.T) {
 
 // Тест 5 проверка на несколько ссылок
 func TestMultipleLinks(t *testing.T) {
+	ctx := context.Background()
+
 	a := NewStorage() // вызвал конструктор
-	code1, err := a.Save("https://example.com")
+	code1, err := a.Save(ctx, "https://example.com")
 	if err != nil {
 		t.Fatalf("Не удалось сохранить: %v", err)
 	}
-	code2, err := a.Save("https://google.com")
+	code2, err := a.Save(ctx, "https://google.com")
 	if err != nil {
 		t.Fatalf("Не удалось сохранить: %v", err)
 	}
-	code3, err := a.Save("https://github.com")
+	code3, err := a.Save(ctx, "https://github.com")
 	if err != nil {
 		t.Fatalf("Не удалось сохранить: %v", err)
 	}
@@ -102,8 +112,10 @@ func TestMultipleLinks(t *testing.T) {
 
 // Тест 6 проверка на пустой url
 func TestSaveEmptyURL(t *testing.T) {
+	ctx := context.Background()
+
 	a := NewStorage() // вызвал конструктор
-	_, err := a.Save("")
+	_, err := a.Save(ctx, "")
 	if err == nil {
 		t.Errorf("код пустой: %v", err)
 	}

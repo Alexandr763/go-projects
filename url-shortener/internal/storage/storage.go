@@ -1,13 +1,15 @@
 package storage
 
 import (
+	"context"
 	"errors"
-	//"fmt"
+	"sync"
 	"url-shortener/internal/generator"
 )
 
 type Storage struct {
 	data map[string]string
+	mu   sync.Mutex
 }
 
 func NewStorage() *Storage {
@@ -16,10 +18,18 @@ func NewStorage() *Storage {
 	}
 }
 
-func (s *Storage) Save(url string) (string, error) {
+func (s *Storage) Save(ctx context.Context, url string) (string, error) {
+	if ctx.Err() != nil {
+		return "", ctx.Err()
+	}
+
 	if url == "" {
 		return "", errors.New("Пустой URL")
 	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	for {
 		code := generator.Generate()
 		_, ok := s.data[code]
@@ -32,13 +42,20 @@ func (s *Storage) Save(url string) (string, error) {
 }
 
 func (s *Storage) Get(code string) (string, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	value, ok := s.data[code]
 	if ok != true {
 		return "", errors.New("Такого кода нет")
 	}
 	return value, nil
+
 }
 
 func (s *Storage) Delete(code string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	delete(s.data, code)
 }
