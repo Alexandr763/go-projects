@@ -1,0 +1,5 @@
+package: apigen
+output: internal/transport/http/apigen/server.gen.go
+generate:
+  models: true
+  std-http-server: true

@@ -1,0 +1,588 @@
+openapi: 3.0.3
+info:
+  title: Gamification API
+  version: 0.1.0
+  description: >
+    Контракт учебного сервиса. Успешные сценарии регистрации, задач и монет
+    закрываются следующими этапами. Пока сценария нет, ручка отвечает 501.
+servers:
+  - url: /
+paths:
+  /api/v1/auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Credentials"
+      responses:
+        "201":
+          $ref: "#/components/responses/CreatedSession"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+  /api/v1/auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Credentials"
+      responses:
+        "200":
+          $ref: "#/components/responses/Session"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+  /api/v1/auth/refresh:
+    post:
+      operationId: refresh
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshToken"
+      responses:
+        "200":
+          $ref: "#/components/responses/Session"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/v1/auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshToken"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/v1/tasks:
+    get:
+      operationId: listTasks
+      tags: [tasks]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/TaskStatus"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+      responses:
+        "200":
+          description: Свои задачи, новые сверху.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/RequestID"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: createTask
+      tags: [tasks]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTask"
+      responses:
+        "201":
+          description: Задача создана и ещё не выполнена.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/RequestID"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/v1/tasks/{id}:
+    parameters:
+      - $ref: "#/components/parameters/TaskID"
+    get:
+      operationId: getTask
+      tags: [tasks]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Своя задача.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/RequestID"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateTask
+      tags: [tasks]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTask"
+      responses:
+        "200":
+          description: Обновлённая своя задача.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/RequestID"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      operationId: deleteTask
+      tags: [tasks]
+      security:
+        - bearerAuth: []
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/tasks/{id}/complete:
+    post:
+      operationId: completeTask
+      tags: [tasks]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/TaskID"
+      responses:
+        "200":
+          description: Задача выполнена. Повтор не создаёт вторую награду.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/RequestID"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/profile:
+    get:
+      operationId: getProfile
+      tags: [profile]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Свой профиль.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/RequestID"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/v1/profile/transactions:
+    get:
+      operationId: listTransactions
+      tags: [profile]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+      responses:
+        "200":
+          description: Свои начисления, новые сверху.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/RequestID"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /health/live:
+    get:
+      operationId: healthLive
+      tags: [health]
+      responses:
+        "200":
+          description: Процесс жив. База не проверяется.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/RequestID"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+  /health/ready:
+    get:
+      operationId: healthReady
+      tags: [health]
+      responses:
+        "200":
+          description: Сервис готов принимать запросы.
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/RequestID"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  headers:
+    RequestID:
+      description: Номер запроса. Клиент может прислать свой.
+      schema:
+        type: string
+      required: true
+  parameters:
+    TaskID:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    TaskStatus:
+      name: status
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [open, done]
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    Offset:
+      name: offset
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+  responses:
+    CreatedSession:
+      description: Пользователь создан.
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestID"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Session"
+    Session:
+      description: Сеанс.
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestID"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Session"
+    NoContent:
+      description: Пустой успех.
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestID"
+    BadRequest:
+      description: Кривое тело или поля.
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestID"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
+    Unauthorized:
+      description: Нет пропуска или он не подходит.
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestID"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
+    NotFound:
+      description: Пути нет, либо задачи нет. Чужая задача выглядит так же.
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestID"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
+    Conflict:
+      description: Действие спорит с уже записанным фактом.
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestID"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
+    TooManyRequests:
+      description: Слишком частые попытки входа или регистрации.
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestID"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
+    NotImplemented:
+      description: Путь есть, сценарий ещё не подключён.
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestID"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
+    Unavailable:
+      description: Процесс жив, но сервис не готов.
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestID"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
+  schemas:
+    ErrorBody:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              enum:
+                - validation_error
+                - unauthorized
+                - not_found
+                - conflict
+                - method_not_allowed
+                - too_many_requests
+                - not_implemented
+                - service_unavailable
+                - internal_error
+            message:
+              type: string
+    Credentials:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+    RefreshToken:
+      type: object
+      required: [refresh]
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+    Session:
+      type: object
+      required: [id, email, coins, access, refresh]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        coins:
+          type: integer
+          minimum: 0
+        access:
+          type: string
+        refresh:
+          type: string
+    CreateTask:
+      type: object
+      required: [title, reward_coins]
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        reward_coins:
+          type: integer
+          minimum: 0
+          maximum: 10000
+    UpdateTask:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        reward_coins:
+          type: integer
+          minimum: 0
+          maximum: 10000
+    Task:
+      type: object
+      required: [id, title, description, reward_coins, is_done, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        reward_coins:
+          type: integer
+        is_done:
+          type: boolean
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    TaskList:
+      type: object
+      required: [tasks]
+      properties:
+        tasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/Task"
+    Profile:
+      type: object
+      required: [id, email, coins, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        coins:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+    Transaction:
+      type: object
+      required: [id, task_id, amount, type, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        task_id:
+          type: string
+          format: uuid
+        amount:
+          type: integer
+          minimum: 0
+        type:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    TransactionList:
+      type: object
+      required: [transactions]
+      properties:
+        transactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Transaction"
+    Health:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
