@@ -26,7 +26,22 @@ func (l *Limiter) Allow(key string) bool {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	now := l.now()
+	for k, times := range l.hits {
+		fresh := make([]time.Time, 0, len(times))
+		for _, at := range times {
+			if now.Sub(at) < l.window {
+				fresh = append(fresh, at)
+			}
+		}
+		if len(fresh) == 0 {
+			delete(l.hits, k)
+		} else {
+			l.hits[k] = fresh
+		}
+	}
+
 	prev := l.hits[key]
+
 	recent := make([]time.Time, 0, len(prev)+1)
 	for _, at := range prev {
 		if now.Sub(at) < l.window {
